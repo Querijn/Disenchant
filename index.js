@@ -110,7 +110,7 @@ connector.on('connect', async (c) => {
 
 	const me = await lcu("/lol-summoner/v1/current-summoner");
 	const mastery = await lcu(`/lol-collections/v1/inventories/${me.summonerId}/champion-mastery`);
-	const owned = await lcu(`/lol-champions/v1/inventories/${me.summonerId}/champions`);
+	const owned = [... (await lcu(`/lol-champions/v1/inventories/${me.summonerId}/champions`))].filter(c => c.ownership.owned);
 
 	let disenchantValue = 0;
 	let count = 0;
@@ -140,7 +140,7 @@ connector.on('connect', async (c) => {
 		}
 		
 		const hasChampion = owned.find(c => c.id == champId) != null;
-		if (disenchantUnowned && hasChampion == false)
+		if (disenchantUnowned == false && hasChampion == false)
 			champ.count--;
 		if (champ.count <= 0)
 			continue;
