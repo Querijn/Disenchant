@@ -1,6 +1,6 @@
 {
   "name": "enchantment",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "If you're simple/like enchantments, clap your hands *clap clap*",
   "main": "index.js",
   "scripts": {
