@@ -125,6 +125,7 @@ connector.on('connect', async (c) => {
 	const disenchantLv5 = await askYesNo("Should we disenchant champion shards when you're mastery level 5 on the champion?");
 	const keepTwoShards = disenchantLv5 == false ? await askYesNo("Do you want to keep two shards in this case? You would have one for level 6 as well.") : false;
 	const disenchantLv6 = await askYesNo("Should we disenchant champion shards when you're mastery level 6 on the champion?");
+	const disenchantlowLv = await askYesNo("Should we keep two shards when you're low mastery on the champion?");
 	const disenchantUnowned = await askYesNo("Should we disenchant champion shards of champs you don't own?");
 
 	const actions = [];
@@ -134,6 +135,9 @@ connector.on('connect', async (c) => {
 		const entry = mastery.find(x => x.championId === champId);
 
 		if (entry) {
+			
+			if (entry.championLevel < 5 && disenchantlowLv == true)
+				champ.count -= 2;
 			
 			if (entry.championLevel == 5 && disenchantLv5 == false)
 				champ.count -= keepTwoShards ? 2 : 1;
