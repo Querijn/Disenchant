@@ -123,6 +123,7 @@ connector.on('connect', async (c) => {
 
 	console.log("You can use champion tokens to improve your mastery level. You might want one for level 6 and one for 7.");
 	const disenchantLv5 = await askYesNo("Should we disenchant champion shards when you're mastery level 5 on the champion?");
+	const keepTwoShards = disenchantLv5 == false ? await askYesNo("Do you want to keep two shards in this case? You would have one for level 6 as well.") : false;
 	const disenchantLv6 = await askYesNo("Should we disenchant champion shards when you're mastery level 6 on the champion?");
 	const disenchantUnowned = await askYesNo("Should we disenchant champion shards of champs you don't own?");
 
@@ -133,8 +134,10 @@ connector.on('connect', async (c) => {
 		const entry = mastery.find(x => x.championId === champId);
 
 		if (entry) {
+			
 			if (entry.championLevel == 5 && disenchantLv5 == false)
-				champ.count--;
+				champ.count -= keepTwoShards ? 2 : 1;
+
 			if (entry && entry.championLevel == 6 && disenchantLv6 == false)
 				champ.count--;
 		}
