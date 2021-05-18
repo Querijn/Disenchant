@@ -5,7 +5,7 @@ At the moment, it:
 - After asking, can open up all your champion capsules
 - After a few questions about what exactly you don't want to disenchant, will disenchant all the champions that fall into your filter.
 
-To answer a question the application asks, enter "y"/"yes" for yes, or "n"/"no" for no, followed by an enter.
+To answer a question the application asks, type in the amount, followed by an enter.
 
 ## How do I download this app?
 
