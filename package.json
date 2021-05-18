@@ -1,9 +1,10 @@
 {
   "name": "enchantment",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "If you're simple/like enchantments, clap your hands *clap clap*",
   "scripts": {
-    "disenchant": "node dist/index.js"
+    "disenchant": "node dist/index.js",
+    "package": "tsc -p . && pkg dist/index.js"
   },
   "bin": "dist/index.js",
   "pkg": {

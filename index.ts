@@ -177,7 +177,7 @@ connector.on('connect', async (c: LCUConnectorResult) => {
 	}
 
 	for (let champ of actions)
-	 	promises.push(lcu("/lol-loot/v1/recipes/CHAMPION_RENTAL_disenchant/craft?repeat=" + champ.count, "POST", [champ.lootId]));
+	 	promises.push(lcu("/lol-loot/v1/recipes/CHAMPION_RENTAL_disenchant/craft?repeat=" + champ.count, "POST", JSON.stringify([champ.lootId])));
 	await Promise.all(promises);
 
 	console.log(`Done. Disenchanted ${count} champion shards for ${disenchantValue} BE.`);
