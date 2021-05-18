@@ -1,16 +1,15 @@
 {
   "name": "enchantment",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "If you're simple/like enchantments, clap your hands *clap clap*",
-  "main": "index.js",
   "scripts": {
-    "disenchant": "node index.js"
+    "disenchant": "node dist/index.js"
   },
-  "bin": "index.js",
+  "bin": "dist/index.js",
   "pkg": {
     "assets": [
       "node_modules/**/*",
-      "src/**/*"
+      "dist/**/*"
     ],
     "targets": [
       "node12-macos-x64",
@@ -22,5 +21,10 @@
   "dependencies": {
     "lcu-connector": "^2.1.2",
     "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.10",
+    "@types/node": "^15.3.0",
+    "typescript": "^4.2.4"
   }
 }

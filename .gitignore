@@ -3,3 +3,4 @@ node_modules
 # binary output
 *-*-win.exe
 *-*-macos
+dist

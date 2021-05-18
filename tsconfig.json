@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+	  "noImplicitAny": true,
+	  "strictNullChecks": true,
+	  "alwaysStrict": true,
+	  "outDir": "dist",
+	  "module": "commonjs",
+	  "target": "es2017",
+	  "sourceMap": true
+	},
+	"exclude": ["node_modules"]
+  }

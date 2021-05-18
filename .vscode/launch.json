@@ -11,8 +11,9 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"program": "${workspaceFolder}\\index.js",
-			"console": "integratedTerminal"
+			"program": "${workspaceFolder}\\dist\\index.js",
+			"console": "externalTerminal",
+			"preLaunchTask": "build"
 		}
 	]
 }

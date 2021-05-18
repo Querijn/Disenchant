@@ -1,22 +1,24 @@
 const LCUConnector = require('lcu-connector');
 const https = require("https");
 const readline = require('readline');
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
+import { ChampionMastery, LolLootPlayerLoot } from './types/lcu';
 
 const connector = new LCUConnector();
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-let championByIdCache = {};
-let championJson = {};
+interface LCUConnectorResult { port: number; username: string; password: string; };
+let championByIdCache: {[language: string]: {[key: number]: DDragonChampion.Champion }} = {};
+let championJson: {[language: string]: DDragonChampion.JSON } = {};
 let authToken = 'UNAUTHORIZED';
-let data;
+let data: LCUConnectorResult;
 
-function ask(question, defaultAnswer = undefined) {
-	return new Promise((r) => {
+function ask(question: string, defaultAnswer?: string) {
+	return new Promise<string>((r) => {
 		if (defaultAnswer != null)
 			question = `${question} (Default = "${defaultAnswer}")`;
-		rl.question(question + " ", function (answer) {
+		rl.question(question + " ", function (answer: string) {
 			if (answer.length === 0 && defaultAnswer != null)
 				r(defaultAnswer);
 			else
@@ -24,7 +26,8 @@ function ask(question, defaultAnswer = undefined) {
 		});
 	});
 }
-async function askYesNo(question, defaultAnswer = undefined) {
+
+async function askYesNo(question: string, defaultAnswer?: "yes" | "no") {
 	if (defaultAnswer != null)
 		question = `${question} (Default = ${defaultAnswer ? "yes" : "no"})`;
 	while (true) {
@@ -37,7 +40,23 @@ async function askYesNo(question, defaultAnswer = undefined) {
 			return false;
 	}
 }
-async function getLatestChampionDDragon(language) {
+
+async function askNumber(question: string, defaultAnswer?: number) {
+	if (defaultAnswer != null)
+		question = `${question} (Default = ${defaultAnswer})`;
+	while (true) {
+		const answer = (await ask(question)).toLowerCase();
+		if (answer.length === 0 && typeof defaultAnswer !== 'undefined')
+			return defaultAnswer;
+
+		const number = parseInt(answer, 10);
+		if (!isNaN(number)) {
+			return number;
+		}
+	}
+}
+
+async function getLatestChampionDDragon(language: string) {
 
 	if (championJson[language])
 		return championJson[language];
@@ -54,7 +73,8 @@ async function getLatestChampionDDragon(language) {
 	championJson[language] = await response.json();
 	return championJson[language];
 }
-async function getChampionByKey(key, language) {
+
+async function getChampionByKey(key: number, language: string) {
 
 	// Setup cache
 	if (!championByIdCache[language]) {
@@ -66,50 +86,36 @@ async function getChampionByKey(key, language) {
 				continue;
 
 			const champInfo = json.data[championName];
-			championByIdCache[language][champInfo.key] = champInfo;
+			championByIdCache[language][+champInfo.key] = champInfo;
 		}
 	}
 
 	return championByIdCache[language][key];
 }
 
-function lcu(path, method = "GET", body = undefined) {
-	return new Promise(resolve => {
-		const req = https.request({
-			host: "127.0.0.1",
-			port: data.port,
-			path,
-			method,
-			headers: {
-				Authorization: authToken,
-				"Content-Type": "application/json"
-			}
-		}, res => {
-			let contents = "";
-			res.setEncoding("utf8");
-			res.on("data", chunk => contents += chunk);
+async function lcu(path: string, method: "GET"|"POST" = "GET", body?: string) {
 
-			res.on("end", () => {
-				resolve(JSON.parse(contents));
-			});
-		});
-
-		if (body) req.write(JSON.stringify(body));
-
-		req.end();
+	const response = await fetch(`https://127.0.0.1:${data.port}${path}`, {
+		method, body,
+		headers: {
+			Authorization: authToken,
+			Accept: "application/json"
+		}
 	});
+
+	return await response.json();
 }
 
-connector.on('connect', async (c) => {
+connector.on('connect', async (c: LCUConnectorResult) => {
 	data = c;
 	authToken = `Basic ${(Buffer.from(`${data.username}:${data.password}`)).toString('base64')}`;
 
-	const loot = await lcu("/lol-loot/v1/player-loot-map");
-	const capsules = Object.values(loot).find(x => x.storeItemId === 128);
-	const champs = Object.values(loot).filter(x => x.type === "CHAMPION_RENTAL");
+	const loot: LolLootPlayerLoot[] = await lcu("/lol-loot/v1/player-loot-map");
+	const capsules = Object.values(loot).find((x: any) => x.storeItemId === 128);
+	const champs = Object.values(loot).filter((x: any) => x.type === "CHAMPION_RENTAL");
 
 	const me = await lcu("/lol-summoner/v1/current-summoner");
-	const mastery = await lcu(`/lol-collections/v1/inventories/${me.summonerId}/champion-mastery`);
+	const mastery = <ChampionMastery[]>await lcu(`/lol-collections/v1/inventories/${me.summonerId}/champion-mastery`);
 	const owned = [... (await lcu(`/lol-champions/v1/inventories/${me.summonerId}/champions`))].filter(c => c.ownership.owned);
 
 	let disenchantValue = 0;
@@ -117,34 +123,35 @@ connector.on('connect', async (c) => {
 	const promises = [];
 
 	if (capsules && capsules.count > 0 && await askYesNo(`Should we open your ${capsules.count} champion capsule${capsules.count != 1 ? "s" : ""}?`)) {
-		const result = await lcu("/lol-loot/v1/recipes/CHEST_128_OPEN/craft?repeat=" + capsules.count, "POST", [capsules.lootId]);
+		const result = await lcu("/lol-loot/v1/recipes/CHEST_128_OPEN/craft?repeat=" + capsules.count, "POST", JSON.stringify([capsules.lootId]));
 		console.log("Champion capsules opened.");
 	}
 
-	console.log("You can use champion tokens to improve your mastery level. You might want one for level 6 and one for 7.");
-	const disenchantLv5 = await askYesNo("Should we disenchant champion shards when you're mastery level 5 on the champion?");
-	const keepTwoShards = disenchantLv5 == false ? await askYesNo("Do you want to keep two shards in this case? You would have one for level 6 as well.") : false;
-	const disenchantLv6 = await askYesNo("Should we disenchant champion shards when you're mastery level 6 on the champion?");
-	const disenchantUnowned = await askYesNo("Should we disenchant champion shards of champs you don't own?");
+	console.log("You can use champion tokens to improve your mastery level. You might want one for level 6 and one for 7.");	
+	const noChampKeepCount = await askNumber("How many Champion Tokens do you want to keep when you don't have the champion?");
+	const lowLevelKeepCount = await askNumber("How many Champion Tokens do you want to keep when you're between level 0 and 4 on the champion?");
+	const level5KeepCount = await askNumber("How many Champion Tokens do you want to keep when you're between level 5 on the champion?");
+	const level6KeepCount = await askNumber("How many Champion Tokens do you want to keep when you're between level 6 on the champion?");
 
 	const actions = [];
 	for (const champ of champs) {
 		const champId = +champ.lootId.split("_")[2];
 		const championData = await getChampionByKey(champId, "en_US");
-		const entry = mastery.find(x => x.championId === champId);
+		let entry = mastery.find(x => x.championId === champId) || { championLevel: 0 };
 
-		if (entry) {
-			
-			if (entry.championLevel == 5 && disenchantLv5 == false)
-				champ.count -= keepTwoShards ? 2 : 1;
-
-			if (entry && entry.championLevel == 6 && disenchantLv6 == false)
-				champ.count--;
-		}
-		
 		const hasChampion = owned.find(c => c.id == champId) != null;
-		if (disenchantUnowned == false && hasChampion == false)
-			champ.count--;
+		if (hasChampion) {
+			if (entry.championLevel == 6)
+				champ.count -= level6KeepCount;
+			else if (entry.championLevel == 5)
+				champ.count -= level5KeepCount;
+			else if (entry.championLevel < 5)
+				champ.count -= lowLevelKeepCount;
+		}
+		else if (hasChampion == false) {
+			champ.count -= noChampKeepCount;
+		}
+
 		if (champ.count <= 0)
 			continue;
 
@@ -170,7 +177,7 @@ connector.on('connect', async (c) => {
 	}
 
 	for (let champ of actions)
-		promises.push(lcu("/lol-loot/v1/recipes/CHAMPION_RENTAL_disenchant/craft?repeat=" + champ.count, "POST", [champ.lootId]));
+	 	promises.push(lcu("/lol-loot/v1/recipes/CHAMPION_RENTAL_disenchant/craft?repeat=" + champ.count, "POST", [champ.lootId]));
 	await Promise.all(promises);
 
 	console.log(`Done. Disenchanted ${count} champion shards for ${disenchantValue} BE.`);
