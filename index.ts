@@ -180,9 +180,33 @@ connector.on('connect', async (c: LCUConnectorResult) => {
 
 	for (let champ of actions)
 	 	promises.push(lcu("/lol-loot/v1/recipes/CHAMPION_RENTAL_disenchant/craft?repeat=" + champ.count, "POST", JSON.stringify([champ.lootId])));
-	await Promise.all(promises);
+	const results: any[] = await Promise.all(promises);
 
-	console.log(`Done. Disenchanted ${count} champion shards for ${disenchantValue} BE.`);
+	// Detect errors
+	let failed = 0;
+	let errorCodes = [];
+	for (let result of results) {
+		if (result.httpStatus == null || (result.httpStatus >= 200 && result.httpStatus < 300)) {
+			errorCodes.push("200");
+			continue;
+		}
+
+		let errorCode = result.errorCode || result.httpStatus;
+		if (result.message)
+			errorCode += ": " + result.message;
+		else if (result.error)
+			errorCode += ": " + result.error;
+		
+		errorCodes.push(errorCode);
+		failed++;
+	}
+
+	if (failed != 0) {
+		console.warn(`Error: Seems like ${failed}/${results.length} disenchant requests failed. This seems like an issue, so could you contact the developer? Errors:\n${errorCodes.join('\n')}`);
+	}
+	else {
+		console.log(`Done. Disenchanted ${count} champion shards for ${disenchantValue} BE.`);
+	}
 	connector.stop();
 	process.exit(0);
 });
