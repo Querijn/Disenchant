@@ -136,10 +136,11 @@ connector.on('connect', async (c: LCUConnectorResult) => {
 
 	const actions = [];
 	for (const champ of champs) {
-		const champId = +champ.lootId.split("_")[2];
+		const champId = +champ.lootId.split("_")[2]; // CHAMPION_RENTAL_1 -> 1
 		const championData = await getChampionByKey(champId, "en_US");
 		let entry = mastery.find(x => x.championId === champId) || { championLevel: 0 };
 
+		// Get the amount to keep based on the questions asked before
 		const hasChampion = owned.find(c => c.id == champId) != null;
 		if (hasChampion) {
 			if (entry.championLevel == 6)
