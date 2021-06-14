@@ -99,7 +99,8 @@ async function lcu(path: string, method: "GET"|"POST" = "GET", body?: string) {
 		method, body,
 		headers: {
 			Authorization: authToken,
-			Accept: "application/json"
+			Accept: "application/json",
+			...(method === "POST") && {"Content-Type": "application/json"}
 		}
 	});
 
